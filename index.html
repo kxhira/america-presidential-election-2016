@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <title>
+        which won more votes?
+    </title>
+    <meta name="keywords" content="won votes, clinton, trump, election">
+    <meta name="description" content="showing how much did clinton/trump win more votes than trump/clinton">
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="http://election.usa.2016.s3-website-ap-northeast-1.amazonaws.com/img.jpg" />
+    <meta property="og:title" content="which won more votes?" />
+    <meta property="og:description" content="showing how much more votes did clinton/trump win than trump/clinton" />
+    <meta property="og:url" content="http://election.usa.2016.s3-website-ap-northeast-1.amazonaws.com/" />
+    <meta property="og:site_name" content="who won more votes?" />
+    <meta property="og:locale" content="en_us" />
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@kxhira">
+    <script src="https://d3js.org/d3.v3.min.js">
+    </script>
+    <style type="text/css">
+    path:hover {
+        fill-opacity: .7;
+        cursor: pointer;
+    }
+    
+    div.tooltip {
+        position: absolute;
+        text-align: center;
+        width: 60px;
+        height: 28px;
+        padding: 2px;
+        font: 12px sans-serif;
+        background: white;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+    }
+    
+    body {
+        font: 11px sans-serif;
+        width: 100%;
+    }
+    
+    #main {
+        margin: 0 auto;
+    }
+    
+    #detail {
+        width: 220px;
+        margin: 0 auto;
+    }
+    
+    #detail>table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    
+    #detail>table>tfoot>tr {
+        border-top: solid 1px #999
+    }
+    
+    .clr-clinton {
+        color: #00a8ff;
+    }
+    
+    .clr-trump {
+        color: #ed0006;
+    }
+    
+    #ratioDiffRange {
+        width: 400px;
+    }
+    
+    #ratioDiffRangeValue {
+        font-size: 1.3rem;
+    }
+    
+    #state {
+        text-align: left;
+        font-weight: bold;
+        color: #999;
+        font-size: 1.05rem;
+    }
+    
+    .row {
+        text-align: center;
+        width: 100%;
+    }
+    
+    #footer {
+        text-align: center;
+        margin-top: 4px;
+    }
+    
+    #footer>div {
+        display: inline-block;
+    }
+    
+    .fb_iframe_widget > span {
+        vertical-align: baseline !important;
+    }
+    .small-font{
+        font-size: 0.5rem;
+    }
+    </style>
+    </meta>
+</head>
+
+<body>
+    <div id="fb-root"></div>
+    <script>
+    (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "//connect.facebook.net/ja_JP/sdk.js#xfbml=1&version=v2.8&appId=1621007941470876";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+    </script>
+    <script>
+    (function(i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function() {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-87318188-1', 'auto');
+    ga('send', 'pageview');
+    </script>
+    <div class="row" id="drawpnl">
+        <div id="main">
+        </div>
+    </div>
+    <div id="header" class="row">
+        <h2>
+        <span class="clr-clinton">clinton</span>/<span class="clr-trump">trump</span> won 
+        <span id="ratioDiffRangeValue"></span>
+        <button id="minusBtn" type="button">
+            -5%
+        </button>
+        <button id="plusBtn" type="button">
+            +5%
+        </button>
+         more votes than <span class="clr-trump">trump</span>/<span class="clr-clinton">clinton</span>
+        </h2>
+    </div>
+    <div class="row">
+        <div id="detail">
+            <table>
+                <caption id="state">
+                    state <span class="small-font">touch state to see the result</span>
+                </caption>
+                <thead>
+                    <tr>
+                        <th align="left">
+                        </th>
+                        <th align="right">
+                            votes
+                        </th>
+                        <th align="right">
+                            %
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="clr-trump">
+                        <td>
+                            D.Trump
+                        </td>
+                        <td align="right" id="trump-votes">
+                        </td>
+                        <td align="right" id="trump">
+                        </td>
+                    </tr>
+                    <tr class="clr-clinton">
+                        <td>
+                            H.Clinton
+                        </td>
+                        <td align="right" id="clinton-votes">
+                        </td>
+                        <td align="right" id="clinton">
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <td>
+                        Difference
+                    </td>
+                    <td align="right" id="diff-votes">
+                    </td>
+                    <td align="right" id="diff">
+                    </td>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <div id="footer">
+        <div class="fb-share-button" data-href="http://election.usa.2016.s3-website-ap-northeast-1.amazonaws.com/" data-layout="button_count" data-size="small" data-mobile-iframe="true"><a class="fb-xfbml-parse-ignore" target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Felection.usa.2016.s3-website-ap-northeast-1.amazonaws.com%2F&amp;src=sdkpreparse">シェア</a></div>
+        <div><a href="https://twitter.com/share" class="twitter-share-button">Tweet</a>
+            <script>
+            ! function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0],
+                    p = /^http:/.test(d.location) ? 'http' : 'https';
+                if (!d.getElementById(id)) {
+                    js = d.createElement(s);
+                    js.id = id;
+                    js.src = p + '://platform.twitter.com/widgets.js';
+                    fjs.parentNode.insertBefore(js, fjs);
+                }
+            }(document, 'script', 'twitter-wjs');
+            </script>
+        </div>
+    </div>
+    <script type="text/javascript">
+    var defs = {
+        trump: {
+            color: "#ed0006"
+        },
+        clinton: {
+            color: "#00a8ff"
+        }
+    }
+    var margin = {
+        right: 10,
+        left: 10
+    }
+    var maxRatioDiff = 0;
+    var root = d3.select("#main");
+    var width = root[0][0].clientWidth - margin.left - margin.right;
+    var height = width * 420 / 700;
+    height = (height > 420) ? 420 : height;
+    var scale = 900 * (width / 700);
+    scale = (scale > 900) ? 900 : scale;
+
+    var projection = d3.geo.albersUsa()
+        .translate([width / 2, height / 2])
+        .scale(scale);
+
+    var path = d3.geo.path()
+        .projection(projection);
+
+    var color = d3.scale.linear()
+        .range([defs.clinton.color, "#FFFFFF", defs.trump.color]);
+
+    var svg = root
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    var legendSvg = d3.select("#main").append("svg")
+    var linearGradient
+    var colorgradation
+    var legendWidth = 220
+
+    d3.json("us.json", function(json) {
+        d3.tsv("states.tsv", function(s) {
+            var states = s
+            for (var i = 0; i < states.length; i++) {
+                var dataState = states[i].state;
+                for (var j = 0; j < json.features.length; j++) {
+                    var jsonState = json.features[j].properties.NAME;
+                    if (dataState == jsonState) {
+                        json.features[j].properties.ev = states[i].ev
+                        json.features[j].properties.finished = states[i].finished
+                        break;
+                    }
+                }
+            }
+
+            d3.tsv("results.tsv", function(data) {
+                for (var i = 0; i < data.length; i++) {
+                    var dataState = data[i].state;
+                    for (var j = 0; j < json.features.length; j++) {
+                        var jsonState = json.features[j].properties.NAME;
+
+                        if (dataState == jsonState) {
+                            if (!json.features[j].properties.results) {
+                                json.features[j].properties.results = {}
+                            }
+                            json.features[j].properties.results[data[i].name] = {
+                                ratio: +data[i].ratio,
+                                votes: +data[i].votes,
+                            }
+
+                        }
+                    }
+                }
+
+                color.domain([-maxRatioDiff, 0, maxRatioDiff])
+                svg.selectAll("path")
+                    .data(json.features)
+                    .enter()
+                    .append("path")
+                    .attr("d", path)
+                    .style("stroke", "#999")
+                    .style("stroke-width", "1")
+                    .on("mouseover", function(d) {
+                        var res = d.properties.results;
+                        if (!res) {
+                            return
+                        }
+
+                        var diff = d.properties.results["D.Trump"].ratio - d.properties.results["H.Clinton"].ratio
+                        var isTrumpWon = (diff > 0);
+                        diff = Math.abs(ceilAndFix(diff, 1))
+                        var diffVotes = d.properties.results["D.Trump"].votes - d.properties.results["H.Clinton"].votes
+                        diffVotes = Math.abs(diffVotes)
+                        d3.select("#state").text(d.properties.NAME + "(EV:" + d.properties.ev + ")")
+                        d3.select("#trump").text(ceilAndFix(d.properties.results["D.Trump"].ratio, 1) + "%")
+                        d3.select("#trump-votes").text(d.properties.results["D.Trump"].votes.toLocaleString())
+                        d3.select("#clinton").text(ceilAndFix(d.properties.results["H.Clinton"].ratio, 1) + "%")
+                        d3.select("#clinton-votes").text(d.properties.results["H.Clinton"].votes.toLocaleString())
+                        d3.select("#diff").text(ceilAndFix(diff, 1) + "%").attr("class", function() {
+                            return (isTrumpWon) ? "clr-trump" : "clr-clinton";
+                        })
+                        d3.select("#diff-votes").text(diffVotes.toLocaleString()).attr("class", function() {
+                            return (isTrumpWon) ? "clr-trump" : "clr-clinton";
+                        })
+                    })
+                paintStates()
+                makeLegend()
+            })
+        })
+    })
+
+    d3.select("#minusBtn").on("click", function() {
+        changeRatioDiff(false)
+    })
+    d3.select("#plusBtn").on("click", function() {
+        changeRatioDiff(true)
+    })
+
+    function changeRatioDiff(isAdd) {
+        if ((!isAdd && maxRatioDiff == 0) || (isAdd && maxRatioDiff == 50)) {
+            return;
+        }
+        maxRatioDiff = maxRatioDiff + ((isAdd) ? 5 : -5);
+        color.domain([-maxRatioDiff, 0, maxRatioDiff])
+        d3.select("#ratioDiffRangeValue").text(maxRatioDiff + "%")
+        paintStates()
+        drawLegend()
+
+    }
+
+    d3.select("#ratioDiffRangeValue").text(maxRatioDiff + "%")
+    d3.select("#ratioDiffRange").property("value", maxRatioDiff);
+
+    function makeLegend() {
+        linearGradient = legendSvg.append('linearGradient')
+            .attr({
+                id: 'gradient',
+                'gradientUnits': 'objectBoundingBox',
+            })
+            .selectAll('stop')
+            .data(color.domain().slice())
+            .enter()
+            .append('stop')
+
+        colorgradation = legendSvg.attr("class", "legend")
+            .attr("width", legendWidth)
+            .attr("height", 30)
+            .append("rect")
+            .attr("width", legendWidth)
+            .attr("height", 18)
+            .attr("y", "1.2em")
+
+
+        legendSvg.selectAll("text")
+            .data(color.domain().slice())
+            .enter()
+            .append("text")
+
+        drawLegend()
+
+    }
+
+    function drawLegend() {
+        linearGradient
+            .data(color.domain().slice())
+            .attr("offset", function(d, i) {
+                return i / (color.domain().slice().length - 1) * 100 + "%";
+            })
+            .attr("stop-color", color)
+
+        colorgradation
+            .style("fill", "url(#gradient)")
+
+        legendSvg.selectAll("text")
+            .data(color.domain().slice())
+            .attr("dy", ".80em")
+            .attr("y", 0)
+            .attr("text-anchor", "middle")
+            .attr("x", function(d, i) {
+                var idx = i - ((color.domain().slice().length - 1) / 2)
+                if (idx < 0) {
+                    return "1.4em"
+                } else if (idx > 0) {
+                    return "-1.4em"
+                }
+                return "0"
+            })
+            .text(function(d, i) {
+                var idx = i - ((color.domain().slice().length - 1) / 2)
+                return ((idx == 0) ? "" : "+") + Math.abs(d) + "%";
+            })
+            .attr("transform", function(d, i) {
+                return "translate(" + i * (legendWidth / (color.domain().slice().length - 1)) + ",0)";
+            })
+    }
+
+    function paintStates() {
+        svg.selectAll("path")
+            .style("fill", function(d) {
+                var res = d.properties.results;
+                if (!res) {
+                    return "white"
+                }
+                var ratioDif = res["D.Trump"].ratio - res["H.Clinton"].ratio
+                if (Math.abs(ratioDif) < Math.abs(maxRatioDiff)) {
+                    return color(ratioDif)
+                }
+                return (ratioDif > 0) ? defs.trump.color : defs.clinton.color
+            })
+    }
+
+    function ceilAndFix(num, fixed) {
+        return num.toFixed(fixed)
+    }
+    </script>
+</body>
+
+</html>
